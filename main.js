@@ -64,8 +64,8 @@ api.on('message', function(message){
                                             id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
                                             user_id INT,
                                             username VARCHAR(20),
-                                            first_name VARBINARY(20),
-                                            last_name VARBINARY(20),
+                                            first_name VARBINARY(50),
+                                            last_name VARBINARY(50),
                                             dr_day TINYINT UNSIGNED,
                                             dr_month TINYINT UNSIGNED
                                        )`, function (error, results, fields){
@@ -73,7 +73,7 @@ api.on('message', function(message){
                         if (error) throw error;
                         onCommand(message, message.text.slice(message.entities[i].offset, message.entities[i].offset + message.entities[i].length)); // Функция для обработки комманд
                     });
-                    connection.query(`INSERT INTO \`chats\`(\`id\`, \`title\`) VALUES (${message.chat.id},'${message.chat.title}')`); // Добавляем чат в таблицу с чатами
+                    connection.query(`INSERT INTO \`chats\`(\`id\`, \`title\`, \`last_message\`) VALUES (${message.chat.id},'${message.chat.title}',0)`); // Добавляем чат в таблицу с чатами
                 }else{
                     onCommand(message, message.text.slice(message.entities[i].offset, message.entities[i].offset + message.entities[i].length)); // Функция для обработки комманд
                 }
@@ -91,7 +91,7 @@ function onCommand(message, command){
 
     /***************/
 
-    if(command == '/dr'){
+    if(command == '/dr' || command.startsWith('/dr@')){
         connection.query(`SELECT * FROM \`chat_${message.chat.id}\` WHERE user_id=${message.from.id}`, function (error, results, fields){ // Берем инфу пользователя из БД
             if (error) throw error;
             if(message.text.split(' ').length === 1){ // Если просто /dr
@@ -148,7 +148,7 @@ function onCommand(message, command){
 
     /***************/
 
-    if(command == '/drs'){
+    if(command == '/drs'|| command.startsWith('/drs@')){
         let page = 1;
 
         /*if(message.text.split(' ').length !== 1){
@@ -160,7 +160,7 @@ function onCommand(message, command){
         getDrs(message, page, function(str, pages){ // запрашивает строку с днями рождения и вызывает функцию
             connection.query(`SELECT * FROM \`chats\` WHERE id=${message.chat.id}`, function (error, results, fields){ // Запрашиваем строку чата из БД
                 if (error) throw error;
-                if(results[0].last_message != 0) // Если последнее сообщение с ДР есть в базе
+                if(results.length > 0 && results[0].last_message != 0) // Если последнее сообщение с ДР есть в базе
                     api.deleteMessage({
                         chat_id: message.chat.id,
                         message_id: results[0].last_message
@@ -187,7 +187,7 @@ function onCommand(message, command){
 
     /***************/
 
-    if(command == '/date'){
+    if(command == '/date'|| command.startsWith('/date@')){
         if(message.text.split(' ').length < 3){ // Если команда состоит меньше, чем из трех слов
             api.sendMessage({
                 chat_id: message.chat.id,
@@ -227,7 +227,7 @@ function onCommand(message, command){
 
     /***************/
 
-    if(command == '/dates'){
+    if(command == '/dates'|| command.startsWith('/dates@')){
         // Ищем в базе строки текущего чата
         connection.query(`SELECT * FROM \`dates\` WHERE chat_id=${message.chat.id}`,function (error, results, fields){
             if (error) throw error;
@@ -262,7 +262,7 @@ function onCommand(message, command){
 
     /***************/
 
-    if(command == '/del_date'){
+    if(command == '/del_date'|| command.startsWith('/del_date@')){
         if(message.text.split(' ').length === 1){ // Если просто /del_date
             api.sendMessage({
                 chat_id: message.chat.id,
@@ -288,6 +288,22 @@ function onCommand(message, command){
                 });
             }
         }
+    }
+
+    if(command == '/sendmes'|| command.startsWith('/sendmes@')){
+        connection.query(`SELECT * FROM \`chats\``,function (error, results, fields){
+            if (error) throw error;
+
+            for(let i in results){
+                //if(results[i].id != -1001352420519){
+                    api.sendMessage({
+                        chat_id: results[i].id,
+                        text: message.text.split(' ').slice(1).join(' '),
+                        parse_mode: 'Markdown'
+                    });
+               // }
+            }
+        });
     }
 }
 
@@ -392,7 +408,7 @@ function getDrs(message, page, func){
 
         let str = `_Дни рождения всех участников_ (стр. ${page})\n\n`;
         let smiles = ['🎂', '🍰', '🥃', '🍷', '🥂', '🍪', '🍾', '💎', '🎈', '🎁', '🎉', '🔞'];
-        let in_page = 2;
+        let in_page = 10;
 
         let smile;
 
