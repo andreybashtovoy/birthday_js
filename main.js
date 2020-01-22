@@ -149,9 +149,9 @@ function onCommand(message, command){
     /***************/
 
     if(command == '/drs'){
-        /*let page = 1;
+        let page = 1;
 
-        if(message.text.split(' ').length !== 1){
+        /*if(message.text.split(' ').length !== 1){
             if(!isNaN(parseInt(message.text.split(' ')[1]))){
                 page = parseInt(message.text.split(' ')[1]);
             }
